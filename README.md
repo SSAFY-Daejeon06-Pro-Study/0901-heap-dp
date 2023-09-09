@@ -1,4 +1,4 @@
-# 0901-heap-dp
+# 0901-ps-heap-dp
 ## 9월 1주차 heap &amp; DP 문제
 ### 구현(1), 힙(2), DP(3)
 [BOJ 10875 뱀](https://www.acmicpc.net/problem/10875)
