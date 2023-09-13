@@ -5,70 +5,98 @@ import java.util.PriorityQueue;
 
 
 /*
-* [문제 요약]
-* 각 입력마다 중간값을 구해야 함
-*
-* [문제 요약]
-* N은 1보다 크거나 같고, 100,000보다 작거나 같은 자연수
-* 정수는 -10,000보다 크거나 같고, 10,000보다 작거나 같다.
-*
-* [문제 설명]
-* 두 개의 힙 사용
-* 최대 힙 - 작은 값을 저장함
-* 최소 힙 - 큰 값을 저장함
-*
-* 첫 번째 수를 최대 힙에 저장
-* 두 번째 수 부터 최대 힙의 peek와 비교하여 크면 최소 힙에 저장
-*   - 작거나 같으면 최대 힙에 저장
-* 저장되고 최대 힙의 peek가 중간값
-*
-* 이러면 짝수일 때 문제가 생김
-*
-* 최대 힙과 최소 힙을 사용하되,
-* 원소 개수 차이에 따라 삽입 방식이 달라짐
-*
-* 첫 원소는 최대 힙에 삽입
-* 두 번째 원소부터 최소 힙의 크기가 최대 힙보다 size가 작으면 최소 힙에 우선 삽입
-* 삽입 후 peek를 비교해서 witch
-*
-* 만약 size가 같다면 최대힙에 삽입 후 peek 비교
-*
-* */
+ * [문제 요약]
+ * 조건에 맞게 우수 마을을 선정하여 우수 마을의 인원 수 합이 최대가 되도록 하시오
+ *
+ * [제약 조건]
+ * 1 ≤ N ≤ 10,000
+ * 주민수 10,000 이하
+ *
+ * 최대 N/2의 마을이 만들어지고, 각 우수마을 인원 수가 10,000이라 할 때
+ * 5,000*10,000 = 50,000,000 -> int 가능
+ *
+ * [조건]
+ * 1. 우수 마을'로 선정된 마을 주민 수의 총 합을 최대로 해야 한다.
+ * 2. 두 마을이 인접해 있으면 두 마을을 모두 '우수 마을'로 선정할 수는 없다.
+ * 3. '우수 마을'로 선정되지 못한 마을은 적어도 하나의 '우수 마을'과는 인접해 있어야 한다.
+ *
+ * [문제 풀이]
+ * 완탐 -> 파워셋
+ * 10,000! -> 불가능
+ *
+ *
+ * dfs를 활용한 dp
+ * 리프노드 부터 해당 마을이 우수마을 일 때와 아닐 때를 구분해서 저장
+ * dp[2][n]
+ * 0 : 우수마을
+ * 1 : 우수마을이 아님
+ *
+ * 현재 마을이 우수마을이면 자신의 자식 노드는 우수마을아 이니어야함
+ * dp[0][n] = dp[1][child] + w
+ *
+ * 현재 마을이 우수마을이 아니면, 자식이 우수마을 일 수도 있고 아닐 수도 있음
+ * dp[1][n] = max(dp[0][child], dp[1][child]);
+ *
+ * 최대
+ * max = max(dp[0][0], dp[0][1]) -> 트리이기 때문에 임의로 루트는 0으로 상정함
+ *
+ *
+ * */
 public class BOJ_1949_우수마을 {
+    private static int n;
+    private static int[] num;
+    private static int[][] dp;
+
+    private static List<Integer>[] tree;
     public static void main(String[] args) throws IOException {
         BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
-        BufferedWriter bw = new BufferedWriter(new OutputStreamWriter(System.out));
-        PriorityQueue<Integer> maxHeap = new PriorityQueue<>((o1, o2) -> o2 - o1);
-        PriorityQueue<Integer> minHeap = new PriorityQueue<>();
+        StringTokenizer stz;
 
+        n = Integer.parseInt(br.readLine());
+        num = new int[n];
+        tree = new List[n];
+        dp = new int[2][n];
 
-        int n = Integer.parseInt(br.readLine()) - 1;
-        int initNumber = Integer.parseInt(br.readLine());
-        maxHeap.add(initNumber);
-        bw.write(initNumber + System.lineSeparator());
-
-        while (n-- > 0){
-            int num = Integer.parseInt(br.readLine());
-
-            if(maxHeap.size() != minHeap.size()){
-                minHeap.add(num);
-            }else{
-                maxHeap.add(num);
-            }
-
-            if(maxHeap.peek() > minHeap.peek()){
-                int a = maxHeap.poll();
-                int b = minHeap.poll();
-
-                maxHeap.add(b);
-                minHeap.add(a);
-            }
-
-            bw.write(maxHeap.peek()+System.lineSeparator());
+        stz = new StringTokenizer(br.readLine());
+        for(int i=0; i<n; i++){
+            num[i] = Integer.parseInt(stz.nextToken());
+            tree[i] = new ArrayList<>();
         }
 
-        bw.flush();
-        bw.close();
+        // 간선의 길이는 n-1개
+        for(int i=0; i<n-1; i++){
+            stz = new StringTokenizer(br.readLine());
+            int a = Integer.parseInt(stz.nextToken()) -1;
+            int b = Integer.parseInt(stz.nextToken()) -1;
+
+            tree[a].add(b);
+            tree[b].add(a);
+        }
+
+        // 임의의 정점 0에서 시작
+        boolean[] visited = new boolean[n];
+        visited[0] = true;
+        dfs(visited, 0);
+
+        System.out.println(Math.max(dp[0][0], dp[1][0]));
+
         br.close();
+    }
+
+    private static void dfs(boolean[] visited, int node) {
+        dp[0][node] = num[node]; // 자신이 우수 마을일 때 초깃값 저장
+
+        for(int nn : tree[node]){
+            if(visited[nn]) continue;
+
+            visited[nn] = true;
+            dfs(visited, nn);
+
+            //우수마을일 때
+            dp[0][node] += dp[1][nn];
+
+            // 우수마을이 아닐 때
+            dp[1][node] += Math.max(dp[0][nn], dp[1][nn]);
+        }
     }
 }
